@@ -2,21 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { io, Socket } from 'socket.io-client';
+import WaitingRoom from '../../components/WaitingRoom';
 import { editorStore } from './editorStore';
 import { submitCode, unlockEditor } from './submit';
-import CodeMirror from '@uiw/react-codemirror';
-import { python } from '@codemirror/lang-python';
 
 let socket: Socket;
 
-interface DualChatProps {
-  mode: 'ai' | 'manual';
-  lobbyId: string;
-  playerName: string;
-  onChangeMode: () => void;
-}
-
-export default function DualChat({ mode, lobbyId, playerName, onChangeMode }: DualChatProps) {
+export default function DualChat() {
+  const [mode, setMode] = useState<'ai' | 'manual' | null>(null);
   const [problem, setProblem] = useState('');
   const [solution, setSolution] = useState('');
   const [userCode, setUserCode] = useState('');
@@ -27,6 +20,7 @@ export default function DualChat({ mode, lobbyId, playerName, onChangeMode }: Du
   const [isModifying, setIsModifying] = useState(false);
   
   // Socket states
+  const [lobbyId, setLobbyId] = useState('');
   const [playerId, setPlayerId] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [submissionCount, setSubmissionCount] = useState(0);
@@ -55,15 +49,6 @@ export default function DualChat({ mode, lobbyId, playerName, onChangeMode }: Du
       socket.disconnect();
     };
   }, []);
-
-  // Initialize editor store based on mode
-  useEffect(() => {
-    if (mode === 'manual') {
-      // Manual mode: start unlocked
-      unlockEditor();
-      setIsLocked(false);
-    }
-  }, [mode]);
 
   // Auto-generate problem when AI mode is selected
   useEffect(() => {
@@ -112,7 +97,6 @@ export default function DualChat({ mode, lobbyId, playerName, onChangeMode }: Du
           
           setUserCode(extractedCode);
           editorStore.setCode(extractedCode);
-          // AI mode: lock immediately after getting solution
           editorStore.lock();
           setIsLocked(true);
         } catch (error) {
@@ -132,7 +116,7 @@ export default function DualChat({ mode, lobbyId, playerName, onChangeMode }: Du
     
     setIsModifying(true);
     setSolution('');
-    unlockEditor();
+    editorStore.unlock();
     setIsLocked(false);
 
     try {
@@ -164,16 +148,12 @@ export default function DualChat({ mode, lobbyId, playerName, onChangeMode }: Du
 
   // Submit code to server
   const handleSubmitCode = () => {
-    let codeToSubmit: string;
-    
-    if (mode === 'manual') {
-      // Manual mode: get code and lock editor
-      codeToSubmit = submitCode();
-      setIsLocked(true);
-    } else {
-      // AI mode: already locked
-      codeToSubmit = editorStore.getCode();
+    if (!lobbyId) {
+      alert('Please enter a lobby ID!');
+      return;
     }
+
+    const codeToSubmit = mode === 'manual' ? submitCode() : editorStore.getCode();
 
     socket.emit('submitCode', {
       lobbyId,
@@ -268,48 +248,60 @@ export default function DualChat({ mode, lobbyId, playerName, onChangeMode }: Du
     return elements;
   };
 
+  // Show waiting room if no mode selected
+  if (!mode) {
+    return <WaitingRoom onSelectMode={setMode} />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-6xl mx-auto space-y-8">
         
-        {/* Header with Mode Badge */}
+        {/* Mode Badge */}
         <div className="flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <div className={`px-4 py-2 rounded-full font-medium ${
-              mode === 'ai' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
-            }`}>
-              {mode === 'ai' ? '🤖 AI Assistant Mode' : '💻 Manual Coding Mode'}
-            </div>
-            <div className="px-4 py-2 bg-white rounded-lg shadow">
-              Lobby: <span className="font-bold">{lobbyId}</span>
-            </div>
+          <div className={`px-4 py-2 rounded-full font-medium ${
+            mode === 'ai' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+          }`}>
+            {mode === 'ai' ? '🤖 AI Assistant Mode' : '💻 Manual Coding Mode'}
           </div>
           <button
-            onClick={onChangeMode}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-lg transition-colors"
+            onClick={() => {
+              setMode(null);
+              setProblem('');
+              setSolution('');
+              setUserCode('');
+              setSubmitted(false);
+              setModificationUsed(false);
+              editorStore.unlock();
+              setIsLocked(false);
+            }}
+            className="px-4 py-2 text-gray-600 hover:text-gray-800"
           >
             ← Change Mode
           </button>
         </div>
 
-        {/* Player Info */}
+        {/* Lobby Info */}
         <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex gap-6">
-            <div className="flex-1">
-              <span className="text-gray-600">Player:</span>
-              <span className="ml-2 font-bold text-gray-800">{playerName}</span>
-            </div>
-            <div className="flex-1">
-              <span className="text-gray-600">Player ID:</span>
-              <span className="ml-2 font-mono text-sm text-gray-800">{playerId || 'Connecting...'}</span>
+          <h2 className="text-xl font-bold mb-4">Lobby Information</h2>
+          <div className="flex gap-4">
+            <input
+              type="text"
+              value={lobbyId}
+              onChange={(e) => setLobbyId(e.target.value)}
+              placeholder="Enter Lobby ID"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg"
+            />
+            <div className="px-4 py-2 bg-gray-100 rounded-lg">
+              Player ID: {playerId || 'Connecting...'}
             </div>
             <div className="px-4 py-2 bg-blue-100 rounded-lg">
-              Submissions: <span className="font-bold">{submissionCount}</span>
+              Submissions: {submissionCount}
             </div>
           </div>
         </div>
 
-        {/* PROBLEM SECTION (AI Mode Only) */}
+        {/* PROBLEM SECTION */}
         {mode === 'ai' && (
           <div className="space-y-4">
             <h2 className="text-2xl font-bold text-gray-800">Coding Problem</h2>
@@ -334,7 +326,7 @@ export default function DualChat({ mode, lobbyId, playerName, onChangeMode }: Du
           </div>
         )}
 
-        {/* CODE EDITOR WITH CODEMIRROR */}
+        {/* CODE EDITOR */}
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold text-gray-800">Your Code</h2>
@@ -346,42 +338,19 @@ export default function DualChat({ mode, lobbyId, playerName, onChangeMode }: Du
           </div>
           
           <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="border border-gray-300 rounded-lg overflow-hidden">
-              <CodeMirror
-                value={userCode}
-                height="400px"
-                extensions={[python()]}
-                onChange={(value) => handleCodeChange(value)}
-                editable={!isLocked}
-                theme="light"
-                basicSetup={{
-                  lineNumbers: true,
-                  highlightActiveLineGutter: true,
-                  highlightSpecialChars: true,
-                  foldGutter: true,
-                  drawSelection: true,
-                  dropCursor: true,
-                  allowMultipleSelections: true,
-                  indentOnInput: true,
-                  bracketMatching: true,
-                  closeBrackets: true,
-                  autocompletion: true,
-                  rectangularSelection: true,
-                  crosshairCursor: true,
-                  highlightActiveLine: true,
-                  highlightSelectionMatches: true,
-                  closeBracketsKeymap: true,
-                  searchKeymap: true,
-                  foldKeymap: true,
-                  completionKeymap: true,
-                  lintKeymap: true,
-                }}
-              />
-            </div>
+            <textarea
+              value={userCode}
+              onChange={(e) => handleCodeChange(e.target.value)}
+              placeholder={mode === 'manual' ? "Write your code here..." : "AI solution will appear here..."}
+              disabled={isLocked}
+              className={`w-full h-64 p-4 font-mono text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                isLocked ? 'bg-gray-50 cursor-not-allowed' : ''
+              }`}
+            />
             
             <button
               onClick={handleSubmitCode}
-              disabled={submitted || !userCode}
+              disabled={submitted || !lobbyId || !userCode}
               className="mt-4 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
             >
               {submitted ? 'Code Submitted ✓' : 'Submit Code'}

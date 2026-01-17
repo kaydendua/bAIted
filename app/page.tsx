@@ -1,12 +1,11 @@
 import Editor from "./web-ide/ide";
-import Chat from "./web-ide/chat";
-import DualChat from "./web-ide/chat";
+import DualChat from "./web-ide/dual-chat";
+import LobbyCreateForm from "@/components/LobbyCreateForm";
 
 export default function Home() {
   return (
     <div>
-    <Editor />
-    <DualChat />
+      <LobbyCreateForm />;
     </div>
   );
 }

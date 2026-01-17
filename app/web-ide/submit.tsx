@@ -1,11 +1,11 @@
 import { editorStore } from "./editorStore";
 
 export function submitCode(): string {
-  // Lock the editor
-  editorStore.lock();
-  
-  // Get the current code
+  // Get the current code first
   const code = editorStore.getCode();
+  
+  // Then lock the editor
+  editorStore.lock();
   
   // Return the code
   return code;
