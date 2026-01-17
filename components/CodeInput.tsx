@@ -91,7 +91,7 @@ export function CodeInput({ length = 6, value, onChange, disabled }: CodeInputPr
           onKeyDown={(e) => handleKeyDown(index, e)}
           onPaste={handlePaste}
           disabled={disabled}
-          className="flex-1 h-16 text-center text-3xl font-bold uppercase"
+          className="flex-1 h-16 text-center text-7xl font-bold uppercase"
         />
       ))}
     </div>

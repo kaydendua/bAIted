@@ -3,41 +3,60 @@ import { io, Socket } from 'socket.io-client';
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001';
 
-let socket: Socket | null = null;
+// Create singleton socket instance
+const getSocket = () => {
+  if (typeof window === 'undefined') return null;
+  
+  if (!(window as any).__socket) {
+    (window as any).__socket = io(SOCKET_URL, {
+      transports: ['websocket', 'polling'],
+      autoConnect: true,
+    });
+    console.log('🔌 Created new socket instance');
+  }
+  
+  return (window as any).__socket as Socket;
+};
 
 export function useSocket() {
   const [isConnected, setIsConnected] = useState(false);
   const [socketInstance, setSocketInstance] = useState<Socket | null>(null);
 
   useEffect(() => {
-    // Create socket connection only once
-    if (!socket) {
-      socket = io(SOCKET_URL, {
-        transports: ['websocket', 'polling'],
-        autoConnect: true,
-      });
+    const socket = getSocket();
+    if (!socket) return;
 
-      socket.on('connect', () => {
-        console.log('✅ Connected to WebSocket server:', socket?.id);
-        setIsConnected(true);
-      });
+    const handleConnect = () => {
+      console.log('✅ Connected to WebSocket server:', socket.id);
+      setIsConnected(true);
+    };
 
-      socket.on('disconnect', () => {
-        console.log('🔌 Disconnected from WebSocket server');
-        setIsConnected(false);
-      });
+    const handleDisconnect = () => {
+      console.log('🔌 Disconnected from WebSocket server');
+      setIsConnected(false);
+    };
 
-      socket.on('connect_error', (error) => {
-        console.error('❌ Connection error:', error);
-        setIsConnected(false);
-      });
+    const handleConnectError = (error: Error) => {
+      console.error('❌ Connection error:', error);
+      setIsConnected(false);
+    };
 
-      setSocketInstance(socket);
+    // Set up connection event listeners
+    socket.on('connect', handleConnect);
+    socket.on('disconnect', handleDisconnect);
+    socket.on('connect_error', handleConnectError);
+
+    // Set initial state
+    if (socket.connected) {
+      setIsConnected(true);
     }
 
+    setSocketInstance(socket);
+
     return () => {
-      // Don't disconnect on component unmount
-      // Socket stays alive for the entire session
+      socket.off('connect', handleConnect);
+      socket.off('disconnect', handleDisconnect);
+      socket.off('connect_error', handleConnectError);
     };
   }, []);
 

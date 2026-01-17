@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CodeInput } from '@/components/CodeInput';
+import GameView from '@/components/GameView';
 
 type Mode = 'create' | 'join';
 
@@ -24,7 +25,16 @@ export default function LobbyForm() {
     joinLobby(lobbyCode, playerName);
   };
 
-  // If in a lobby, show lobby view
+  // Debug logging
+  console.log('LobbyForm render - lobby:', lobby);
+  console.log('Lobby status:', lobby?.status);
+
+  // If game is in progress, show game view
+  if (lobby && lobby.status === 'in-progress') {
+    console.log('✅ Showing GameView - lobby status is in-progress');
+    return <GameView />;
+  }
+
   if (lobby) {
     return (
       <Card className="max-w-120 grow">
