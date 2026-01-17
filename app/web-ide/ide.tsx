@@ -8,6 +8,10 @@ import { indentUnit } from "@codemirror/language";
 export default function Editor() {
   const [code, setCode] = useState("// Code");
 
+  const requestCode = () => {
+    return code;
+  }
+
   return (
     <CodeMirror
       value={code}
