@@ -1,14 +1,16 @@
 import PlayerCodeCarousel from "@/components/ui/playerCodeDisplay";
 import TopBar from "@/components/ui/topbar";
-import { Button } from "@/components/ui/button"
+import VoteSection from "@/components/ui/voteSection";
 
 export default function WebIDEPage() {
   return (
     <>
       <div className="flex flex-col justify-center items-center">
         <TopBar></TopBar>
-        <div className="">DISCUSS!</div>
-        <Button className="w-2xl">Vote</Button>
+        <div className="text-4xl">DISCUSS!</div>
+        <br />
+        <VoteSection></VoteSection>
+        <br />
         <PlayerCodeCarousel></PlayerCodeCarousel>
       </div>
     </>
