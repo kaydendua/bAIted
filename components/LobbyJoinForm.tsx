@@ -7,28 +7,23 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-export default function LobbyCreateForm() {
-  const { lobby, error, isLoading, isConnected, createLobby, startGame, isHost } = useLobby();
+export default function LobbyJoinForm() {
+  const { lobby, error, isLoading, isConnected, joinLobby } = useLobby();
   const [playerName, setPlayerName] = useState('');
+  const [lobbyCode, setLobbyCode] = useState('');
 
-  const handleCreateLobby = () => {
-    createLobby(playerName, 6);
+  const handleJoinLobby = () => {
+    joinLobby(lobbyCode, playerName);
   };
 
   if (lobby) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Lobby Created! 🎉</CardTitle>
-          <CardDescription>Share this code with your friends</CardDescription>
+          <CardTitle>In Lobby: {lobby.code}</CardTitle>
+          <CardDescription>Waiting for host to start the game</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <Label>Lobby Code</Label>
-            <div className="text-4xl font-bold tracking-widest text-center py-4 bg-muted rounded-md">
-              {lobby.code}
-            </div>
-          </div>
           <div>
             <Label>Players ({lobby.players.length}/{lobby.maxPlayers})</Label>
             <ul className="mt-2 space-y-1">
@@ -39,12 +34,6 @@ export default function LobbyCreateForm() {
               ))}
             </ul>
           </div>
-          
-          {isHost && lobby.players.length >= 3 && (
-            <Button onClick={startGame} className="w-full">
-              Start Game
-            </Button>
-          )}
         </CardContent>
       </Card>
     );
@@ -53,12 +42,24 @@ export default function LobbyCreateForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Create Lobby</CardTitle>
+        <CardTitle>Join Lobby</CardTitle>
         <CardDescription>
           {isConnected ? 'Connected to server' : 'Connecting...'}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="lobbyCode">Lobby Code</Label>
+          <Input
+            id="lobbyCode"
+            placeholder="Enter 6-digit code"
+            value={lobbyCode}
+            onChange={(e) => setLobbyCode(e.target.value.toLowerCase())}
+            maxLength={6}
+            disabled={!isConnected || isLoading}
+          />
+        </div>
+
         <div className="space-y-2">
           <Label htmlFor="playerName">Your Name</Label>
           <Input
@@ -77,11 +78,11 @@ export default function LobbyCreateForm() {
         )}
 
         <Button
-          onClick={handleCreateLobby}
-          disabled={!isConnected || isLoading || !playerName.trim()}
+          onClick={handleJoinLobby}
+          disabled={!isConnected || isLoading || !playerName.trim() || !lobbyCode.trim()}
           className="w-full"
         >
-          {isLoading ? 'Creating...' : 'Create Lobby'}
+          {isLoading ? 'Joining...' : 'Join Lobby'}
         </Button>
       </CardContent>
     </Card>
