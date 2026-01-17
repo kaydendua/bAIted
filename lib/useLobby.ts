@@ -7,74 +7,87 @@ export function useLobby() {
   const [lobby, setLobby] = useState<Lobby | null>(null);
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isImpostor, setIsImpostor] = useState(false);
 
   // Listen for lobby events
   useEffect(() => {
-    if (!socket) return;
+    if (!socket) {
+      console.log('⏳ Socket not available yet');
+      return;
+    }
 
-    // Lobby created
-    socket.on('lobby-created', (data: { lobby: Lobby }) => {
-      console.log('Lobby created:', data.lobby);
+    console.log('🔧 Setting up socket event listeners for socket:', socket.id);
+
+    const handleLobbyCreated = (data: { lobby: Lobby }) => {
+      console.log('📢 [EVENT] lobby-created:', data.lobby);
       setLobby(data.lobby);
       setIsLoading(false);
       setError('');
-    });
+    };
 
-    // Lobby joined
-    socket.on('lobby-joined', (data: { lobby: Lobby }) => {
-      console.log('Joined lobby:', data.lobby);
+    const handleLobbyJoined = (data: { lobby: Lobby }) => {
+      console.log('📢 [EVENT] lobby-joined:', data.lobby);
       setLobby(data.lobby);
       setIsLoading(false);
       setError('');
-    });
+    };
 
-    // Player joined (broadcast to all in lobby)
-    socket.on('player-joined', (data: { lobby: Lobby; player?: Player }) => {
-      console.log('Player joined:', data.player?.name);
+    const handlePlayerJoined = (data: { lobby: Lobby; player?: Player }) => {
+      console.log('📢 [EVENT] player-joined:', data.player?.name);
       setLobby(data.lobby);
-    });
+    };
 
-    // Player left
-    socket.on('player-left', (data: { lobby: Lobby; playerId: string }) => {
-      console.log('Player left:', data.playerId);
+    const handlePlayerLeft = (data: { lobby: Lobby; playerId: string }) => {
+      console.log('📢 [EVENT] player-left:', data.playerId);
       setLobby(data.lobby);
-    });
+    };
 
-    // Game started
-    socket.on('game-started', (data: { lobby: Lobby }) => {
-      console.log('Game started!');
+    const handleGameStarted = (data: { lobby: Lobby }) => {
+      console.log('📢 [EVENT] game-started!', data.lobby);
+      console.log('Lobby status:', data.lobby.status);
       setLobby(data.lobby);
-    });
+    };
 
-    // You are ai
-    socket.on('you-are-ai', (data: { message: string }) => {
-      console.log('🎭 You are the ai!');
-      // Handle ai notification
-    });
+    const handleYouAreAi = (data: { message: string }) => {
+      console.log('📢 [EVENT] you-are-ai!', data);
+      setIsImpostor(true);
+    };
 
-    // Lobby closed
-    socket.on('lobby-closed', (data: { reason: string }) => {
-      console.log('Lobby closed:', data.reason);
+    const handleLobbyClosed = (data: { reason: string }) => {
+      console.log('📢 [EVENT] lobby-closed:', data.reason);
       setLobby(null);
       setError(`Lobby closed: ${data.reason}`);
-    });
+    };
 
-    // Errors
-    socket.on('error', (data: { message: string }) => {
-      console.error('Socket error:', data.message);
+    const handleError = (data: { message: string }) => {
+      console.error('📢 [EVENT] error:', data.message);
       setError(data.message);
       setIsLoading(false);
-    });
+    };
 
+    // Register all event listeners
+    socket.on('lobby-created', handleLobbyCreated);
+    socket.on('lobby-joined', handleLobbyJoined);
+    socket.on('player-joined', handlePlayerJoined);
+    socket.on('player-left', handlePlayerLeft);
+    socket.on('game-started', handleGameStarted);
+    socket.on('you-are-ai', handleYouAreAi);
+    socket.on('lobby-closed', handleLobbyClosed);
+    socket.on('error', handleError);
+
+    console.log('✅ All socket event listeners registered');
+
+    // Cleanup function
     return () => {
-      socket.off('lobby-created');
-      socket.off('lobby-joined');
-      socket.off('player-joined');
-      socket.off('player-left');
-      socket.off('game-started');
-      socket.off('you-are-ai');
-      socket.off('lobby-closed');
-      socket.off('error');
+      console.log('🧹 Cleaning up socket event listeners');
+      socket.off('lobby-created', handleLobbyCreated);
+      socket.off('lobby-joined', handleLobbyJoined);
+      socket.off('player-joined', handlePlayerJoined);
+      socket.off('player-left', handlePlayerLeft);
+      socket.off('game-started', handleGameStarted);
+      socket.off('you-are-ai', handleYouAreAi);
+      socket.off('lobby-closed', handleLobbyClosed);
+      socket.off('error', handleError);
     };
   }, [socket]);
 
@@ -148,6 +161,7 @@ export function useLobby() {
     error,
     isLoading,
     isConnected,
+    isImpostor,
     
     // Actions
     createLobby,
