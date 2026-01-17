@@ -46,10 +46,10 @@ export function useLobby() {
       setLobby(data.lobby);
     });
 
-    // You are impostor
-    socket.on('you-are-impostor', (data: { message: string }) => {
-      console.log('🎭 You are the impostor!');
-      // Handle impostor notification
+    // You are ai
+    socket.on('you-are-ai', (data: { message: string }) => {
+      console.log('🎭 You are the ai!');
+      // Handle ai notification
     });
 
     // Lobby closed
@@ -72,7 +72,7 @@ export function useLobby() {
       socket.off('player-joined');
       socket.off('player-left');
       socket.off('game-started');
-      socket.off('you-are-impostor');
+      socket.off('you-are-ai');
       socket.off('lobby-closed');
       socket.off('error');
     };
@@ -159,5 +159,8 @@ export function useLobby() {
     // Computed
     isHost: lobby ? socket?.id === lobby.hostSocketId : false,
     currentPlayer: lobby?.players.find(p => p.id === socket?.id),
+
+    // Socket details
+    socket: socket ?? null,
   };
 }

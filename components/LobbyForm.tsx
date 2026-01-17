@@ -7,11 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CodeInput } from '@/components/CodeInput';
+import { useSocket } from '@/lib/socket';
 
 type Mode = 'create' | 'join';
 
 export default function LobbyForm() {
-  const { lobby, error, isLoading, isConnected, createLobby, joinLobby, startGame, isHost } = useLobby();
+  const { lobby, error, isLoading, isConnected, createLobby, joinLobby, startGame, isHost, socket } = useLobby();
   const [mode, setMode] = useState<Mode>('create');
   const [playerName, setPlayerName] = useState('');
   const [lobbyCode, setLobbyCode] = useState('');
@@ -23,6 +24,8 @@ export default function LobbyForm() {
   const handleJoinLobby = () => {
     joinLobby(lobbyCode, playerName);
   };
+
+  console.log(socket);
 
   // If in a lobby, show lobby view
   if (lobby) {
@@ -45,7 +48,7 @@ export default function LobbyForm() {
             <Label>Players ({lobby.players.length}/{lobby.maxPlayers})</Label>
             <ul className="mt-2 space-y-1">
               {lobby.players.map((player) => (
-                <li key={player.id} className="text-sm">
+                <li key={player.id} className="text-sm" style={{ color: socket && player.id === socket.id ? 'red' : 'inherit' }}>
                   {player.name} {player.id === lobby.hostSocketId && '(Host)'}
                 </li>
               ))}

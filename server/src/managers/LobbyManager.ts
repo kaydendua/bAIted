@@ -48,6 +48,33 @@ class LobbyManager {
     logger.info(`Player ${playerName} joined lobby ${code}`);
     return lobby;
   }
+
+  getLobby(code: string): Lobby | undefined {
+    return this.lobbies.get(code);
+  }
+
+  startGame(code: string): Lobby | null {
+    const lobby = this.lobbies.get(code);
+    
+    if (!lobby) {
+      return null;
+    }
+
+    if (lobby.players.length < 3) {
+      logger.warn(`Cannot start game in lobby ${code}: need at least 3 players`);
+      return null;
+    }
+
+    const randomIndex = Math.floor(Math.random() * lobby.players.length);
+    const aiId = lobby.players[randomIndex].id;
+    lobby.players[randomIndex].isAi = true;
+    lobby.aiId = aiId;
+    lobby.status = 'in-progress';
+
+    logger.info(`Game started in lobby ${code}, ai: ${aiId}`);
+    return lobby;
+  }
+
 }
 
 export const lobbyManager = new LobbyManager();

@@ -55,3 +55,49 @@ export function handleJoinLobby(io: Server, socket: Socket, data: { lobbyCode: s
 
     logger.info(`Player ${playerName} joined lobby ${lobbyCode}`);
 }
+
+export function handleStartGame(io: Server, socket: Socket, data: { code: string }) {
+  try {
+    const { code } = data;
+    const lobby = lobbyManager.getLobby(code);
+    
+    if (!lobby) {
+      socket.emit('error', { message: 'Lobby not found' });
+      return;
+    }
+
+    if (lobby.hostSocketId !== socket.id) {
+      socket.emit('error', { message: 'Only the host can start the game' });
+      return;
+    }
+
+    const updatedLobby = lobbyManager.startGame(code);
+    
+    if (!updatedLobby) {
+      socket.emit('error', { message: 'Failed to start game. Need at least 3 players.' });
+      return;
+    }
+
+    io.to(code).emit('game-started', {
+      lobby: {
+        ...updatedLobby,
+        aiId: undefined,
+        players: updatedLobby.players.map(p => ({
+          ...p,
+          isAi: false
+        }))
+      }
+    });
+
+    if (updatedLobby.aiId) {
+      io.to(updatedLobby.aiId).emit('you-are-ai', {
+        message: 'You are the ai! Use AI to help you code.'
+      });
+    }
+    
+    logger.info(`Game started in lobby ${code}`);
+  } catch (error) {
+    logger.error('Error starting game:', error);
+    socket.emit('error', { message: 'Failed to start game' });
+  }
+}
