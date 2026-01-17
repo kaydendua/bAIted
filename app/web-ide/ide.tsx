@@ -1,20 +1,37 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import CodeMirror, { oneDark } from "@uiw/react-codemirror";
 import { python } from "@codemirror/lang-python";
 import { indentUnit } from "@codemirror/language";
+import { editorStore } from "./editorStore";
 
 export default function Editor() {
-  const [code, setCode] = useState("// Code");
+  const [code, setCode] = useState(editorStore.getCode());
+  const [locked, setLocked] = useState(editorStore.isLocked());
 
-  const requestCode = () => {
-    return code;
-  }
-  
-  const updateCode = (updatedCode : string) => {
-    setCode(updatedCode);
-  }
+  // Subscribe to code changes from external sources
+  useEffect(() => {
+    const unsubscribe = editorStore.subscribe((newCode) => {
+      setCode(newCode);
+    });
+    return unsubscribe;
+  }, []);
+
+  // Subscribe to lock state changes
+  useEffect(() => {
+    const unsubscribe = editorStore.subscribeLock((isLocked) => {
+      setLocked(isLocked);
+    });
+    return unsubscribe;
+  }, []);
+
+  const handleChange = (value: string) => {
+    if (!locked) {
+      setCode(value);
+      editorStore.setCode(value);
+    }
+  };
 
   return (
     <CodeMirror
@@ -22,7 +39,9 @@ export default function Editor() {
       height="300px"
       extensions={[python(), indentUnit.of("    ")]}
       theme={oneDark}
-      onChange={(value) => setCode(value)}
+      onChange={handleChange}
+      editable={!locked}
+      readOnly={locked}
     />
   );
 }
