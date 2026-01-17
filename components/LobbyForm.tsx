@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CodeInput } from '@/components/CodeInput';
-import { useSocket } from '@/lib/socket';
 
 type Mode = 'create' | 'join';
 
@@ -25,8 +24,6 @@ export default function LobbyForm() {
     joinLobby(lobbyCode, playerName);
   };
 
-  console.log(socket);
-
   // If in a lobby, show lobby view
   if (lobby) {
     return (
@@ -40,7 +37,7 @@ export default function LobbyForm() {
         <CardContent className="space-y-4">
           <div>
             <Label>Lobby Code</Label>
-            <div className="text-3xl font-bold tracking-widest text-center py-3 bg-muted rounded-md">
+            <div className="text-3xl mt-4 font-bold tracking-widest text-center py-3 bg-muted rounded-md">
               {lobby.code}
             </div>
           </div>
