@@ -8,7 +8,7 @@ import {
 
 import PlayerCodeInstance from "./playerCodeInstance"
 
-export default function CarouselDemo() {
+export default function PlayerCodeCarousel() {
   return (
     <Carousel className="w-full max-w-3/4">
       <CarouselContent>

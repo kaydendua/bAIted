@@ -1,4 +1,4 @@
-import CarouselDemo from "@/components/ui/playerCodeDisplay";
+import PlayerCodeCarousel from "@/components/ui/playerCodeDisplay";
 import TopBar from "@/components/ui/topbar";
 
 export default function WebIDEPage() {
@@ -7,7 +7,7 @@ export default function WebIDEPage() {
       <div className="flex flex-col justify-center items-center">
         <TopBar></TopBar>
         <div className="">DISCUSS!</div>
-        <CarouselDemo></CarouselDemo>
+        <PlayerCodeCarousel></PlayerCodeCarousel>
       </div>
     </>
   )
