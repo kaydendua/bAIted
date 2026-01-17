@@ -26,7 +26,7 @@ export default function LobbyForm() {
   // If in a lobby, show lobby view
   if (lobby) {
     return (
-      <Card>
+      <Card className="max-w-120 grow">
         <CardHeader>
           <CardTitle>Lobby: {lobby.code}</CardTitle>
           <CardDescription>
@@ -69,11 +69,11 @@ export default function LobbyForm() {
 
   // Show create/join form
   return (
-    <Card>
+    <Card className="max-w-120 grow">
       <CardHeader>
         <CardTitle>Join the Game</CardTitle>
         <CardDescription>
-          {isConnected ? '✅ Connected to server' : '🔴 Connecting...'}
+          {isConnected ? 'Connected to server' : 'Connecting...'}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -81,7 +81,7 @@ export default function LobbyForm() {
         <div className="flex gap-2 p-1 bg-muted rounded-lg">
           <button
             onClick={() => setMode('create')}
-            className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer ${
               mode === 'create'
                 ? 'bg-background shadow-sm'
                 : 'hover:bg-background/50'
@@ -91,7 +91,7 @@ export default function LobbyForm() {
           </button>
           <button
             onClick={() => setMode('join')}
-            className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer ${
               mode === 'join'
                 ? 'bg-background shadow-sm'
                 : 'hover:bg-background/50'
