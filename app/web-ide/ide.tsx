@@ -11,6 +11,10 @@ export default function Editor() {
   const requestCode = () => {
     return code;
   }
+  
+  const updateCode = (updatedCode : string) => {
+    setCode(updatedCode);
+  }
 
   return (
     <CodeMirror
