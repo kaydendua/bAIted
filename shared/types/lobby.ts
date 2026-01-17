@@ -4,7 +4,7 @@ export type LobbyStatus = 'waiting' | 'in-progress' | 'ended';
 
 export interface Lobby {
   code: string;
-  hostId: string;
+  hostSocketId: string;
   players: Player[];
   status: LobbyStatus;
   createdAt: Date;
