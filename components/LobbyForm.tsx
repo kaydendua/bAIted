@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { CodeInput } from '@/components/CodeInput';
 
 type Mode = 'create' | 'join';
 
@@ -103,16 +104,13 @@ export default function LobbyForm() {
 
         {/* Join Mode - Show lobby code input first */}
         {mode === 'join' && (
-          <div className="space-y-2">
-            <Label htmlFor="lobbyCode">Lobby Code</Label>
-            <Input
-              id="lobbyCode"
-              placeholder="Enter 6-digit code"
+          <div className="space-y-3">
+            <Label className="block">Lobby Code</Label>
+            <CodeInput
+              length={6}
               value={lobbyCode}
-              onChange={(e) => setLobbyCode(e.target.value.toLowerCase())}
-              maxLength={6}
+              onChange={setLobbyCode}
               disabled={!isConnected || isLoading}
-              className="text-center text-lg tracking-widest"
             />
           </div>
         )}
