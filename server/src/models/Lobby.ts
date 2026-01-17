@@ -17,7 +17,7 @@ export interface Lobby {
   };
 }
 
-export function createLobby(code: string, hostSocketId: string, hostName: string): Lobby {
+export function createLobby(code: string, hostSocketId: string, hostName: string, maxPlayers: number = 8): Lobby {
   return {
     code,
     hostSocketId: hostSocketId,
@@ -30,6 +30,6 @@ export function createLobby(code: string, hostSocketId: string, hostName: string
     }],
     status: 'waiting',
     createdAt: new Date(),
-    maxPlayers: 8
+    maxPlayers: maxPlayers
   };
 }

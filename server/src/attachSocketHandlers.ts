@@ -1,5 +1,5 @@
 import { Server, Socket } from 'socket.io';
-import { handleCreateLobby } from './handlers/lobbyHandlers';
+import { handleCreateLobby, handleJoinLobby } from './handlers/lobbyHandlers';
 import { logger } from './utils/logger';
 
 export function handleConnection(socket: Socket) {
@@ -13,7 +13,7 @@ export function attachSocketHandlers(io: Server) {
     handleConnection(socket);
 
     socket.on('create-lobby', (data) => handleCreateLobby(io, socket, data));
-    // socket.on('join-lobby', (data) => handleJoinLobby(io, socket, data));
+    socket.on('join-lobby', (data) => handleJoinLobby(io, socket, data));
     // socket.on('leave-lobby', () => handleLeaveLobby(io, socket));
     // socket.on('start-game', (data) => handleStartGame(io, socket, data));
 
