@@ -8,6 +8,9 @@ import { useGamePhase } from '../app/useGamePhase';
 import Editor from '../app/web-ide/ide';
 import { editorStore } from '../app/web-ide/editorStore';
 import DualChat from '../app/web-ide/chat';
+import DiscussionPage from '@/components/DiscussionPage';
+import VoteResult from '@/components/VoteResult';
+import { useVoting } from '@/lib/useVoting';
 
 export default function GameView() {
   const { lobby, isImpostor, currentPlayer } = useLobbyContext();
@@ -19,6 +22,8 @@ export default function GameView() {
     totalPlayers,
     submitCode 
   } = useGamePhase();
+  
+  const { votedOutPlayer, showVoteResult, resetVoting } = useVoting();
 
   const [problem, setProblem] = useState('');
   const [problemLoading, setProblemLoading] = useState(false);
@@ -94,6 +99,12 @@ export default function GameView() {
     const code = editorStore.getCode();
     submitCode(lobby.code, code);
     editorStore.lock();
+  };
+
+  const handleContinueAfterVote = () => {
+    resetVoting();
+    // Here you might want to emit an event to start the next round
+    // or transition to a game-over screen if no AIs remain
   };
 
   const formatTime = (ms: number) => {
@@ -179,6 +190,21 @@ export default function GameView() {
   }
 
   console.log('✅ GameView: Rendering game interface');
+
+  // VOTE RESULT SCREEN
+  if (showVoteResult && votedOutPlayer) {
+    return (
+      <VoteResult 
+        votedOutPlayer={votedOutPlayer} 
+        onContinue={handleContinueAfterVote}
+      />
+    );
+  }
+
+  // DISCUSSION/VOTING PHASE
+  if (currentPhase === 'discussion' || currentPhase === 'voting') {
+    return <DiscussionPage />;
+  }
 
   // ROLE REVEAL SCREEN (5 seconds)
   if (showRoleReveal) {
