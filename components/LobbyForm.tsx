@@ -33,7 +33,7 @@ export default function LobbyForm() {
   // If game is in progress, show game view
   if (lobby && lobby.status === 'in-progress') {
     console.log('✅ Showing GameView - lobby status is in-progress');
-    return <GameView />;
+    return <div className="grow"><GameView /></div>;
   }
 
   if (lobby) {
