@@ -1,20 +1,26 @@
+"use client"
+
 import LobbyForm from "@/components/LobbyForm";
-import { LobbyProvider } from "@/lib/LobbyContext";
+import { LobbyProvider, useLobbyContext } from "@/lib/LobbyContext";
 
 export default function Home() {
+  // Only show the header component if the lobby state is not 'in-progress'
+  const { lobby } = useLobbyContext();
+
+
   return (
-    <LobbyProvider>
-      <div className="w-full">
+    <div className="w-full">
+      {lobby?.status !== 'in-progress' && (
         <header className="flex flex-col items-center">
-          <img src='/logo.png' alt="Logo" className="h-48 w-96 object-contain"/>
-          <p className="text-lg text-balance opacity-80 sm:text-xl">
-            A spin-off on Among Us. A fun game where players code answers to questions and attempt determine who is the Vibe coder.
-          </p>
-        </header>
-        <div className="w-full h-full flex items-center justify-center">
-          <LobbyForm />
-        </div>
+        <img src='/logo.png' alt="Logo" className="h-48 w-96 object-contain"/>
+        <p className="text-lg text-balance opacity-80 sm:text-xl">
+          A spin-off on Among Us. A fun game where players code answers to questions and attempt determine who is the Vibe coder.
+        </p>
+      </header>
+      )}
+      <div className="w-full h-full flex items-center justify-center">
+        <LobbyForm />
       </div>
-    </LobbyProvider>
+    </div>
   );
 }
