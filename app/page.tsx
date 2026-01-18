@@ -6,7 +6,7 @@ export default function Home() {
     <LobbyProvider>
       <div className="w-full">
         <header className="flex flex-col items-center">
-          <h1 className="text-3xl font-bold tracking-tight md:text-5xl">bAIted</h1>
+          <img src='/logo.png' alt="Logo" className="h-48 w-96 object-contain"/>
           <p className="text-lg text-balance opacity-80 sm:text-xl">
             A spin-off on Among Us. A fun game where players code answers to questions and attempt determine who is the Vibe coder.
           </p>
