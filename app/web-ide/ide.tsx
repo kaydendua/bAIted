@@ -6,7 +6,11 @@ import { python } from "@codemirror/lang-python";
 import { indentUnit } from "@codemirror/language";
 import { editorStore } from "./editorStore";
 
-export default function Editor() {
+interface EditorProps {
+  isAI?: boolean;
+}
+
+export default function Editor({ isAI = false }: EditorProps) {
   const [code, setCode] = useState(editorStore.getCode());
   const [locked, setLocked] = useState(editorStore.isLocked());
 
@@ -25,6 +29,13 @@ export default function Editor() {
     });
     return unsubscribe;
   }, []);
+
+  // Lock editor for AI players
+  useEffect(() => {
+    if (isAI) {
+      editorStore.lock();
+    }
+  }, [isAI]);
 
   const handleChange = (value: string) => {
     if (!locked) {

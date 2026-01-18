@@ -406,7 +406,7 @@ export default function GameView() {
                 </CardHeader>
                 <CardContent className="p-4 flex-1 overflow-hidden min-h-0">
                   <div className="h-full overflow-hidden">
-                    <Editor />
+                    <Editor isAI={isImpostor} />
                   </div>
                 </CardContent>
                 {/* AI Input at bottom of card (only for impostor) */}
