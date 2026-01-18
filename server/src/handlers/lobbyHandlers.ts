@@ -97,8 +97,8 @@ export function handleStartGame(io: Server, socket: Socket, data: { code: string
     }
     
     // AUTO-START READING PHASE after 7 seconds (5s role reveal + 2s buffer)
-    setTimeout(() => {
-      gamePhaseManager.startReadingPhase(code, io);
+    setTimeout(async () => {
+      await gamePhaseManager.startReadingPhase(code, io);
     }, 7000);
     
     logger.info(`Game started in lobby ${code}`);

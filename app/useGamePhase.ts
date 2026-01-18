@@ -8,6 +8,7 @@ interface PhaseData {
   phase: GamePhase;
   duration: number;
   startsAt: number;
+  problem?: string; // Problem sent from server
 }
 
 interface CodeSubmission {
@@ -25,6 +26,7 @@ export function useGamePhase() {
   const [submittedCount, setSubmittedCount] = useState(0);
   const [totalPlayers, setTotalPlayers] = useState(0);
   const [submissions, setSubmissions] = useState<CodeSubmission[]>([]);
+  const [problem, setProblem] = useState<string>('');
 
   useEffect(() => {
     if (!socket) return;
@@ -34,6 +36,11 @@ export function useGamePhase() {
       console.log('Phase started:', data.phase);
       setCurrentPhase(data.phase);
       setTimeRemaining(data.duration);
+      
+      // Set problem if included (same for all players)
+      if (data.problem) {
+        setProblem(data.problem);
+      }
       
       // Reset submission state for new phase
       if (data.phase === 'coding') {
@@ -99,6 +106,7 @@ export function useGamePhase() {
     submittedCount,
     totalPlayers,
     submissions,
+    problem,
     submitCode,
     startReadingPhase,
   };

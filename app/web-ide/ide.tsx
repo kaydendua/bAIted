@@ -36,12 +36,13 @@ export default function Editor() {
   return (
     <CodeMirror
       value={code}
-      height="300px"
+      height="100%"
       extensions={[python(), indentUnit.of("    ")]}
       theme={oneDark}
       onChange={handleChange}
       editable={!locked}
       readOnly={locked}
+      className="h-full"
     />
   );
 }

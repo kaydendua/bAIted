@@ -7,7 +7,7 @@ import { Bot, User, Code, Clock, Send } from 'lucide-react';
 import { useGamePhase } from '../app/useGamePhase';
 import Editor from '../app/web-ide/ide';
 import { editorStore } from '../app/web-ide/editorStore';
-import DualChat from '../app/web-ide/chat';
+import AIInput from '../app/web-ide/chat';
 
 export default function GameView() {
   const { lobby, isImpostor, currentPlayer } = useLobbyContext();
@@ -17,11 +17,10 @@ export default function GameView() {
     hasSubmitted, 
     submittedCount, 
     totalPlayers,
+    problem,
     submitCode 
   } = useGamePhase();
 
-  const [problem, setProblem] = useState('');
-  const [problemLoading, setProblemLoading] = useState(false);
   const [showRoleReveal, setShowRoleReveal] = useState(true);
   const [roleRevealProgress, setRoleRevealProgress] = useState(100);
 
@@ -51,42 +50,6 @@ export default function GameView() {
       return () => clearInterval(interval);
     }
   }, [lobby?.status, showRoleReveal]);
-
-  // Fetch problem when game starts
-  useEffect(() => {
-    if (lobby?.status === 'in-progress' && !problem && !problemLoading) {
-      fetchProblem();
-    }
-  }, [lobby?.status]);
-
-  const fetchProblem = async () => {
-    setProblemLoading(true);
-    try {
-      const res = await fetch('/api/number', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
-      });
-      
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
-      
-      const data = await res.json();
-      
-      if (data.error) {
-        console.error('API returned error:', data.error);
-        setProblem(data.response || 'Failed to load problem. Please check server configuration.');
-      } else {
-        setProblem(data.response);
-      }
-    } catch (error) {
-      console.error('Error fetching problem:', error);
-      setProblem('Failed to load problem. Please ensure the API is configured correctly.');
-    } finally {
-      setProblemLoading(false);
-    }
-  };
 
   const handleSubmit = () => {
     if (!lobby || hasSubmitted) return;
@@ -323,7 +286,7 @@ export default function GameView() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-8">
-                {problemLoading ? (
+                {!problem ? (
                   <div className="flex items-center justify-center py-12">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
                     <span className="ml-4 text-gray-400 text-lg">Loading problem...</span>
@@ -344,9 +307,9 @@ export default function GameView() {
   // CODING PHASE (2 minutes)
   if (currentPhase === 'coding') {
     return (
-      <div className="min-h-screen bg-black text-white flex flex-col">
+      <div className="h-screen bg-black text-white flex flex-col overflow-hidden">
         {/* Top Bar with Timer and Submit */}
-        <div className="w-full bg-gradient-to-r from-green-900/40 via-green-800/40 to-green-900/40 border-b-2 border-green-500/50 backdrop-blur-sm flex-shrink-0">
+        <div className="w-full bg-gradient-to-r from-green-900/40 via-green-800/40 to-green-900/40 border-b-2 border-green-500/50 backdrop-blur-sm shrink-0">
           <div className="w-full px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-6">
@@ -393,18 +356,18 @@ export default function GameView() {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 w-full px-4 py-4 overflow-hidden">
+        <div className="flex-1 w-full px-4 py-4 overflow-hidden min-h-0">
           <div className="flex gap-4 h-full">
             {/* Left: Problem */}
-            <div className="w-1/4 flex flex-col">
-              <Card className="bg-gray-900/70 border-gray-800 backdrop-blur-sm h-full flex flex-col">
-                <CardHeader className="border-b border-gray-800 flex-shrink-0">
+            <div className="w-1/4 min-w-[250px] max-w-[350px] flex flex-col">
+              <Card className="bg-gray-900/70 border-gray-800 backdrop-blur-sm h-full flex flex-col overflow-hidden">
+                <CardHeader className="border-b border-gray-800 shrink-0">
                   <CardTitle className="text-white text-lg flex items-center gap-2">
                     <Code className="w-5 h-5 text-blue-400" />
                     Problem
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-6 overflow-y-auto flex-1">
+                <CardContent className="p-6 overflow-y-auto flex-1 min-h-0">
                   <div className="prose prose-invert prose-sm max-w-none">
                     {formatResponse(problem)}
                   </div>
@@ -412,10 +375,10 @@ export default function GameView() {
               </Card>
             </div>
 
-            {/* Center: Code Editor */}
-            <div className={`${isImpostor ? 'w-2/4' : 'w-3/4'} flex flex-col`}>
-              <Card className="bg-gray-900/70 border-gray-800 backdrop-blur-sm h-full flex flex-col">
-                <CardHeader className="border-b border-gray-800 flex-shrink-0">
+            {/* Right: Code Editor (takes remaining space) */}
+            <div className="flex-1 min-w-0 flex flex-col">
+              <Card className="bg-gray-900/70 border-gray-800 backdrop-blur-sm h-full flex flex-col overflow-hidden">
+                <CardHeader className="border-b border-gray-800 shrink-0">
                   <div className="flex items-center justify-between">
                     <div>
                       <CardTitle className="text-white text-lg flex items-center gap-2">
@@ -436,33 +399,15 @@ export default function GameView() {
                     )}
                   </div>
                 </CardHeader>
-                <CardContent className="p-4 flex-1 overflow-hidden">
-                  <div className="h-full">
+                <CardContent className="p-4 flex-1 overflow-hidden min-h-0">
+                  <div className="h-full overflow-hidden">
                     <Editor />
                   </div>
                 </CardContent>
+                {/* AI Input at bottom of card (only for impostor) */}
+                {isImpostor && <AIInput disabled={hasSubmitted} />}
               </Card>
             </div>
-
-            {/* Right: AI Chat (only for impostor) */}
-            {isImpostor && (
-              <div className="w-1/4 flex flex-col">
-                <Card className="bg-gray-900/70 border-red-800 backdrop-blur-sm h-full flex flex-col ring-1 ring-red-500/30">
-                  <CardHeader className="bg-gradient-to-r from-red-900/40 to-purple-900/40 border-b border-red-800 flex-shrink-0">
-                    <CardTitle className="text-white text-lg flex items-center gap-2">
-                      <Bot className="w-5 h-5 text-red-400" />
-                      AI Assistant
-                    </CardTitle>
-                    <CardDescription className="text-red-300/80 text-xs">
-                      Use carefully to avoid detection
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="p-0 flex-1 overflow-hidden">
-                    <DualChat />
-                  </CardContent>
-                </Card>
-              </div>
-            )}
           </div>
         </div>
       </div>

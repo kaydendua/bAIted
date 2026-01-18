@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
     }
 
     const completion = await openai.chat.completions.create({
-      model: "llama-3.3-70b",
+      model: "gpt-oss-120b",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.8,
     });
