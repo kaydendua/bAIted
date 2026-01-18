@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useLobby } from '@/lib/useLobby';
+import { useLobbyContext } from '@/lib/LobbyContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,7 +12,7 @@ import GameView from '@/components/GameView';
 type Mode = 'create' | 'join';
 
 export default function LobbyForm() {
-  const { lobby, error, isLoading, isConnected, createLobby, joinLobby, startGame, isHost, socket } = useLobby();
+  const { lobby, error, isLoading, isConnected, createLobby, joinLobby, startGame, isHost, socket } = useLobbyContext();
   const [mode, setMode] = useState<Mode>('create');
   const [playerName, setPlayerName] = useState('');
   const [lobbyCode, setLobbyCode] = useState('');
@@ -28,6 +28,7 @@ export default function LobbyForm() {
   // Debug logging
   console.log('LobbyForm render - lobby:', lobby);
   console.log('Lobby status:', lobby?.status);
+  console.log('Socket:', socket?.id, 'Connected:', isConnected);
 
   // If game is in progress, show game view
   if (lobby && lobby.status === 'in-progress') {

@@ -9,6 +9,8 @@ export function useLobby() {
   const [isLoading, setIsLoading] = useState(false);
   const [isImpostor, setIsImpostor] = useState(false);
 
+  console.log('useLobby hook - socket:', socket?.id, 'isConnected:', isConnected, 'lobby:', lobby);
+
   // Listen for lobby events
   useEffect(() => {
     if (!socket) {
@@ -43,9 +45,10 @@ export function useLobby() {
     };
 
     const handleGameStarted = (data: { lobby: Lobby }) => {
-      console.log('📢 [EVENT] game-started!', data.lobby);
-      console.log('Lobby status:', data.lobby.status);
+      console.log('📢 [EVENT] game-started!', JSON.stringify(data, null, 2));
+      console.log('Setting lobby state to:', data.lobby);
       setLobby(data.lobby);
+      console.log('Lobby state updated!');
     };
 
     const handleYouAreAi = (data: { message: string }) => {
@@ -146,9 +149,22 @@ export function useLobby() {
   }, [socket]);
 
   const startGame = useCallback(() => {
-    if (!socket || !lobby) return;
+    if (!socket || !lobby) {
+      console.error('Cannot start game - socket:', socket?.id, 'lobby:', lobby);
+      return;
+    }
+
+    console.log('🎮 Starting game for lobby:', lobby.code);
+    console.log('Socket ID:', socket.id);
+    console.log('Socket connected:', socket.connected);
+    
+    // Add a one-time listener to verify we get a response
+    socket.once('game-started', (data) => {
+      console.log('🎉 DIRECT LISTENER: game-started received!', data);
+    });
 
     socket.emit('start-game', { code: lobby.code });
+    console.log('✅ start-game event emitted');
   }, [socket, lobby]);
 
   const clearError = useCallback(() => {
