@@ -19,7 +19,7 @@ export interface ServerToClientEvents {
   'player-joined': (data: { lobby: Lobby; player?: Player }) => void;
   'player-left': (data: { lobby: Lobby; playerId: string }) => void;
   'game-started': (data: { lobby: Lobby }) => void;
-  'you-are-impostor': (data: { message: string }) => void;
+  'you-are-ai': (data: { message: string }) => void;
   'player-code-updated': (data: { playerId: string; code: string }) => void;
   'player-submitted': (data: { playerId: string; playerName?: string }) => void;
   'game-ended': (data: { lobby: Lobby; players: Player[] }) => void;

@@ -55,3 +55,58 @@ export function handleJoinLobby(io: Server, socket: Socket, data: { lobbyCode: s
 
     logger.info(`Player ${playerName} joined lobby ${lobbyCode}`);
 }
+
+export function handleStartGame(io: Server, socket: Socket, data: { code: string }) {
+  try {
+    logger.info(`handleStartGame called by ${socket.id} with data:`, data);
+    const { code } = data;
+    
+    if (!code) {
+      logger.warn('No code provided in start-game event');
+      socket.emit('error', { message: 'Lobby code is required' });
+      return;
+    }
+    
+    const lobby = lobbyManager.getLobby(code);
+    
+    if (!lobby) {
+      socket.emit('error', { message: 'Lobby not found' });
+      return;
+    }
+
+    if (lobby.hostSocketId !== socket.id) {
+      socket.emit('error', { message: 'Only the host can start the game' });
+      return;
+    }
+
+    const updatedLobby = lobbyManager.startGame(code);
+    
+    if (!updatedLobby) {
+      socket.emit('error', { message: 'Failed to start game. Need at least 3 players.' });
+      return;
+    }
+
+    logger.info(`Game started in lobby ${code}, ai: ${updatedLobby.aiId}`);
+
+    // Send game-started event to all players in the room
+    // Don't include aiId in the broadcast, but keep the actual isAi status for each player
+    io.to(code).emit('game-started', {
+      lobby: {
+        ...updatedLobby,
+        aiId: undefined, // Remove aiId from client payload for security
+        // Keep the actual player data including correct isAi values
+      }
+    });
+
+    if (updatedLobby.aiId) {
+      io.to(updatedLobby.aiId).emit('you-are-ai', {
+        message: 'You are the ai! Use AI to help you code.'
+      });
+    }
+    
+    logger.info(`Game started in lobby ${code}`);
+  } catch (error) {
+    logger.error('Error starting game:', error);
+    socket.emit('error', { message: 'Failed to start game' });
+  }
+}

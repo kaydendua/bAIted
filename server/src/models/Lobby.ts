@@ -9,7 +9,7 @@ export interface Lobby {
   status: LobbyStatus;
   createdAt: Date;
   maxPlayers: number;
-  impostorId?: string;
+  aiId?: string;
   problem?: {
     id: string;
     title: string;
@@ -24,7 +24,7 @@ export function createLobby(code: string, hostSocketId: string, hostName: string
     players: [{
       id: hostSocketId,
       name: hostName,
-      isImpostor: false,
+      isAi: false,
       codeSubmission: '',
       isReady: false
     }],

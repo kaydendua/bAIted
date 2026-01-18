@@ -9,7 +9,7 @@ export interface Lobby {
   status: LobbyStatus;
   createdAt: Date;
   maxPlayers: number;
-  impostorId?: string;
+  aiId?: string;
   problem?: {
     id: string;
     title: string;
