@@ -1,5 +1,5 @@
 // useGamePhase.ts
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSocket } from '../lib/socket';
 
 export type GamePhase = 'reading' | 'coding' | 'voting' | 'results';
@@ -9,6 +9,8 @@ interface PhaseData {
   duration: number;
   startsAt: number;
   problem?: string; // Problem sent from server
+  submissions?: CodeSubmission[]; // Submissions for voting phase
+  results?: GameResults; // Results for results phase
 }
 
 interface CodeSubmission {
@@ -16,6 +18,22 @@ interface CodeSubmission {
   playerName: string;
   code: string;
   submittedAt: number;
+}
+
+interface VoteResult {
+  playerId: string;
+  playerName: string;
+  votes: number;
+  wasEliminated: boolean;
+  wasAI: boolean;
+}
+
+interface GameResults {
+  isTie: boolean;
+  eliminatedPlayer: { id: string; name: string; wasAI: boolean } | null;
+  aiPlayer: { id: string; name: string } | null;
+  voteResults: VoteResult[];
+  humansWin: boolean;
 }
 
 export function useGamePhase() {
@@ -27,13 +45,53 @@ export function useGamePhase() {
   const [totalPlayers, setTotalPlayers] = useState(0);
   const [submissions, setSubmissions] = useState<CodeSubmission[]>([]);
   const [problem, setProblem] = useState<string>('');
+  const [hasVoted, setHasVoted] = useState(false);
+  const [gameResults, setGameResults] = useState<GameResults | null>(null);
+  
+  // Use refs to store timer data to avoid stale closures
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const phaseDataRef = useRef<{ startsAt: number; duration: number } | null>(null);
+
+  // Separate effect for the timer countdown
+  useEffect(() => {
+    if (!phaseDataRef.current) return;
+    
+    // Clear any existing timer
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+    
+    const { startsAt, duration } = phaseDataRef.current;
+    
+    timerRef.current = setInterval(() => {
+      const elapsed = Date.now() - startsAt;
+      const remaining = Math.max(0, duration - elapsed);
+      setTimeRemaining(remaining);
+
+      if (remaining === 0 && timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    }, 100);
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [currentPhase]); // Re-run when phase changes
 
   useEffect(() => {
     if (!socket) return;
 
     // Phase started
-    socket.on('phase-started', (data: PhaseData) => {
-      console.log('Phase started:', data.phase);
+    const handlePhaseStarted = (data: PhaseData) => {
+      console.log('Phase started:', data.phase, data);
+      
+      // Store timer data in ref
+      phaseDataRef.current = { startsAt: data.startsAt, duration: data.duration };
+      
       setCurrentPhase(data.phase);
       setTimeRemaining(data.duration);
       
@@ -42,25 +100,29 @@ export function useGamePhase() {
         setProblem(data.problem);
       }
       
+      // Set submissions if included (for voting phase)
+      if (data.submissions) {
+        setSubmissions(data.submissions);
+      }
+      
+      // Set results if included (for results phase)
+      if (data.results) {
+        setGameResults(data.results);
+      }
+      
       // Reset submission state for new phase
       if (data.phase === 'coding') {
         setHasSubmitted(false);
         setSubmittedCount(0);
       }
+      
+      // Reset vote state for voting phase
+      if (data.phase === 'voting') {
+        setHasVoted(false);
+      }
+    };
 
-      // Start countdown timer
-      const interval = setInterval(() => {
-        const elapsed = Date.now() - data.startsAt;
-        const remaining = Math.max(0, data.duration - elapsed);
-        setTimeRemaining(remaining);
-
-        if (remaining === 0) {
-          clearInterval(interval);
-        }
-      }, 100);
-
-      return () => clearInterval(interval);
-    });
+    socket.on('phase-started', handlePhaseStarted);
 
     // Code submitted confirmation
     socket.on('code-submitted', () => {
@@ -93,6 +155,13 @@ export function useGamePhase() {
     socket.emit('submit-code', { lobbyCode, code });
   }, [socket]);
 
+  const submitVote = useCallback((lobbyCode: string, votedForId: string) => {
+    if (!socket || hasVoted) return;
+    
+    socket.emit('vote', { lobbyCode, votedForId });
+    setHasVoted(true);
+  }, [socket, hasVoted]);
+
   const startReadingPhase = useCallback((lobbyCode: string) => {
     if (!socket) return;
     
@@ -107,7 +176,10 @@ export function useGamePhase() {
     totalPlayers,
     submissions,
     problem,
+    hasVoted,
+    gameResults,
     submitCode,
+    submitVote,
     startReadingPhase,
   };
 }

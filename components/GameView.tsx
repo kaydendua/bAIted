@@ -18,11 +18,16 @@ export default function GameView() {
     submittedCount, 
     totalPlayers,
     problem,
-    submitCode 
+    submissions,
+    hasVoted,
+    gameResults,
+    submitCode,
+    submitVote
   } = useGamePhase();
 
   const [showRoleReveal, setShowRoleReveal] = useState(true);
   const [roleRevealProgress, setRoleRevealProgress] = useState(100);
+  const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null);
 
   console.log('GameView render - lobby:', lobby);
   console.log('GameView - isImpostor:', isImpostor);
@@ -407,6 +412,218 @@ export default function GameView() {
                 {/* AI Input at bottom of card (only for impostor) */}
                 {isImpostor && <AIInput disabled={hasSubmitted} problem={problem} />}
               </Card>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // VOTING PHASE (1 minute)
+  if (currentPhase === 'voting') {
+    const handleVote = () => {
+      if (!lobby || !selectedPlayer || hasVoted) return;
+      submitVote(lobby.code, selectedPlayer);
+    };
+
+    // Filter out current player from voting options (can't vote for yourself)
+    const votableSubmissions = submissions.filter(s => s.playerId !== currentPlayer?.id);
+
+    return (
+      <div className="h-screen bg-black text-white flex flex-col overflow-hidden">
+        {/* Top Bar with Timer */}
+        <div className="w-full bg-gradient-to-r from-purple-900/40 via-purple-800/40 to-purple-900/40 border-b-2 border-purple-500/50 backdrop-blur-sm shrink-0">
+          <div className="w-full px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-3">
+                  <User className="w-7 h-7 text-purple-400" />
+                  <div>
+                    <h3 className="text-2xl font-bold text-purple-400">Voting Phase</h3>
+                    <p className="text-purple-300/80 text-sm">
+                      Find the AI impostor!
+                    </p>
+                  </div>
+                </div>
+                <div className="h-10 w-px bg-purple-500/30"></div>
+                <div className="flex items-center gap-3">
+                  <Clock className="w-6 h-6 text-purple-400" />
+                  <span className="text-4xl font-mono font-bold text-purple-400 drop-shadow-[0_0_20px_rgba(168,85,247,0.5)]">
+                    {formatTime(timeRemaining)}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={handleVote}
+                disabled={hasVoted || !selectedPlayer}
+                className={`px-8 py-3 rounded-lg font-semibold transition-all flex items-center gap-2 text-lg ${
+                  hasVoted
+                    ? 'bg-gray-700 cursor-not-allowed text-gray-400'
+                    : !selectedPlayer
+                    ? 'bg-gray-700 cursor-not-allowed text-gray-400'
+                    : 'bg-purple-500 hover:bg-purple-600 text-white shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40'
+                }`}
+              >
+                {hasVoted ? (
+                  <>
+                    <span className="text-2xl">✓</span>
+                    <span>Vote Cast</span>
+                  </>
+                ) : (
+                  <>
+                    <User className="w-5 h-5" />
+                    <span>Cast Vote</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 w-full px-4 py-4 overflow-auto">
+          <div className="max-w-6xl mx-auto">
+            <div className="mb-6 text-center">
+              <h2 className="text-xl text-gray-300 mb-2">Review the code submissions and vote for who you think is the AI impostor</h2>
+              {isImpostor && (
+                <p className="text-red-400 text-sm">You are the impostor! Try to blend in and not get caught.</p>
+              )}
+            </div>
+
+            {/* Submissions Grid */}
+            <div className="grid gap-4">
+              {votableSubmissions.map((submission) => (
+                <Card 
+                  key={submission.playerId}
+                  className={`bg-gray-900/70 border-2 backdrop-blur-sm cursor-pointer transition-all ${
+                    selectedPlayer === submission.playerId 
+                      ? 'border-purple-500 ring-2 ring-purple-500/30' 
+                      : 'border-gray-800 hover:border-gray-700'
+                  } ${hasVoted ? 'cursor-not-allowed opacity-70' : ''}`}
+                  onClick={() => !hasVoted && setSelectedPlayer(submission.playerId)}
+                >
+                  <CardHeader className="border-b border-gray-800 py-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-white text-lg flex items-center gap-2">
+                        <User className="w-5 h-5 text-purple-400" />
+                        {submission.playerName}
+                      </CardTitle>
+                      {selectedPlayer === submission.playerId && (
+                        <span className="px-3 py-1 bg-purple-500/20 border border-purple-500/30 rounded-full text-xs text-purple-400">
+                          Selected
+                        </span>
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-4">
+                    <pre className="bg-gray-950 text-gray-100 p-4 rounded-lg overflow-x-auto border border-gray-800 text-sm max-h-64 overflow-y-auto">
+                      <code>{submission.code || '// No code submitted'}</code>
+                    </pre>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // RESULTS PHASE
+  if (currentPhase === 'results' && gameResults) {
+    return (
+      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center overflow-hidden relative">
+        {/* Animated background */}
+        <div 
+          className={`absolute inset-0 ${
+            gameResults.humansWin
+              ? 'bg-gradient-to-br from-green-950/50 via-emerald-950/50 to-black'
+              : 'bg-gradient-to-br from-red-950/50 via-purple-950/50 to-black'
+          }`}
+        >
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--tw-gradient-stops))] from-transparent via-black/50 to-black"></div>
+        </div>
+
+        {/* Content */}
+        <div className="relative z-10 text-center max-w-2xl mx-auto px-6">
+          {/* Result Announcement */}
+          {gameResults.isTie ? (
+            <div className="space-y-6">
+              <div className="text-6xl mb-4">⚖️</div>
+              <h1 className="text-5xl font-black text-yellow-400 tracking-tight">
+                IT'S A TIE!
+              </h1>
+              <p className="text-xl text-yellow-300/80">
+                No one was eliminated this round
+              </p>
+              <div className="mt-8 p-6 bg-red-900/30 border border-red-500/30 rounded-xl">
+                <p className="text-red-400 text-lg">
+                  The AI Impostor was <span className="font-bold text-red-300">{gameResults.aiPlayer?.name}</span>
+                </p>
+                <p className="text-red-300/70 mt-2">The AI wins by avoiding detection!</p>
+              </div>
+            </div>
+          ) : gameResults.humansWin ? (
+            <div className="space-y-6">
+              <div className="text-6xl mb-4">🎉</div>
+              <h1 className="text-5xl font-black text-green-400 tracking-tight animate-pulse">
+                HUMANS WIN!
+              </h1>
+              <p className="text-xl text-green-300/80">
+                The AI Impostor has been found!
+              </p>
+              <div className="mt-8 p-6 bg-green-900/30 border border-green-500/30 rounded-xl">
+                <p className="text-green-400 text-lg">
+                  <span className="font-bold text-green-300">{gameResults.eliminatedPlayer?.name}</span> was the AI!
+                </p>
+                <p className="text-green-300/70 mt-2">Great detective work!</p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <div className="text-6xl mb-4">🤖</div>
+              <h1 className="text-5xl font-black text-red-400 tracking-tight">
+                AI WINS!
+              </h1>
+              <p className="text-xl text-red-300/80">
+                The wrong player was eliminated!
+              </p>
+              <div className="mt-8 space-y-4">
+                <div className="p-4 bg-gray-900/50 border border-gray-700 rounded-xl">
+                  <p className="text-gray-400">
+                    <span className="font-bold text-gray-300">{gameResults.eliminatedPlayer?.name}</span> was eliminated
+                  </p>
+                  <p className="text-gray-500 text-sm mt-1">But they were human!</p>
+                </div>
+                <div className="p-4 bg-red-900/30 border border-red-500/30 rounded-xl">
+                  <p className="text-red-400">
+                    The AI was actually <span className="font-bold text-red-300">{gameResults.aiPlayer?.name}</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Vote Results */}
+          <div className="mt-10">
+            <h3 className="text-lg font-semibold text-gray-400 mb-4">Vote Results</h3>
+            <div className="flex flex-wrap justify-center gap-3">
+              {gameResults.voteResults.sort((a, b) => b.votes - a.votes).map((result) => (
+                <div 
+                  key={result.playerId}
+                  className={`px-4 py-2 rounded-lg border ${
+                    result.wasAI 
+                      ? 'bg-red-900/30 border-red-500/50 text-red-300' 
+                      : result.wasEliminated
+                      ? 'bg-yellow-900/30 border-yellow-500/50 text-yellow-300'
+                      : 'bg-gray-800/50 border-gray-700 text-gray-300'
+                  }`}
+                >
+                  <span className="font-medium">{result.playerName}</span>
+                  <span className="ml-2 text-sm opacity-70">({result.votes} votes)</span>
+                  {result.wasAI && <span className="ml-2 text-xs">🤖</span>}
+                </div>
+              ))}
             </div>
           </div>
         </div>

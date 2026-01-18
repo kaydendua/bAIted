@@ -2,6 +2,7 @@ import { Server, Socket } from 'socket.io';
 import { voteManager } from '../managers/VoteManager';
 import { lobbyManager } from '../managers/LobbyManager';
 import { logger } from '../utils/logger';
+import { gamePhaseManager } from '../managers/GamePhaseManager';
 
 export function handleVote(
   io: Server, 
@@ -22,6 +23,12 @@ export function handleVote(
     // Validate game is in progress
     if (lobby.status !== 'in-progress') {
       socket.emit('error', { message: 'Voting is only allowed during the game' });
+      return;
+    }
+    
+    // Check if we're in voting phase
+    if (gamePhaseManager.getCurrentPhase(lobbyCode) !== 'voting') {
+      socket.emit('error', { message: 'Voting phase has ended' });
       return;
     }
 
@@ -70,6 +77,13 @@ export function handleVote(
     });
 
     logger.info(`Vote cast in ${lobbyCode}: ${voter.name} voted for ${votedPlayer.name}`);
+    
+    // Check if all players have voted - end voting early
+    const allVotes = voteManager.getVotes(lobbyCode);
+    if (allVotes.size >= lobby.players.length) {
+      logger.info(`All players voted in ${lobbyCode}, ending voting phase early`);
+      gamePhaseManager.endVotingPhase(lobbyCode, io);
+    }
   } catch (error) {
     logger.error('Error handling vote:', error);
     socket.emit('error', { message: 'Failed to cast vote' });

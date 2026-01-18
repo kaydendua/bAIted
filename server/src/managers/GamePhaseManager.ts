@@ -262,13 +262,124 @@ class GamePhaseManager {
     this.currentPhases.set(lobbyCode, 'voting');
     this.phaseStartTimes.set(lobbyCode, Date.now());
 
+    const lobby = lobbyManager.getLobby(lobbyCode);
+    const submissions = this.codeSubmissions.get(lobbyCode) || new Map();
+    
+    // Build submissions array with player names
+    const submissionsArray = Array.from(submissions.values()).map(sub => ({
+      playerId: sub.playerId,
+      playerName: lobby?.players.find(p => p.id === sub.playerId)?.name || 'Unknown',
+      code: sub.code,
+      submittedAt: sub.submittedAt
+    }));
+
     io.to(lobbyCode).emit('phase-started', {
       phase: 'voting',
       duration: 60000, // 1 minute for voting
-      startsAt: Date.now()
+      startsAt: Date.now(),
+      submissions: submissionsArray
+    });
+
+    // Set timer to auto-end voting phase
+    const timeoutId = setTimeout(() => {
+      this.endVotingPhase(lobbyCode, io);
+    }, 60000);
+
+    this.phaseTimers.set(lobbyCode, {
+      lobbyCode,
+      phase: 'voting',
+      timeoutId
     });
 
     logger.info(`Voting phase started for lobby ${lobbyCode}`);
+  }
+
+  endVotingPhase(lobbyCode: string, io: any): void {
+    // Prevent double-calling
+    if (this.currentPhases.get(lobbyCode) !== 'voting') {
+      return;
+    }
+    
+    const lobby = lobbyManager.getLobby(lobbyCode);
+    if (!lobby) return;
+
+    this.clearTimer(lobbyCode);
+
+    // Import vote manager to get results
+    const { voteManager } = require('./VoteManager');
+    const voteCounts = voteManager.getAllVoteCounts(lobbyCode);
+
+    // Find player(s) with most votes
+    let maxVotes = 0;
+    let playersWithMaxVotes: string[] = [];
+
+    for (const [playerId, count] of voteCounts.entries()) {
+      if (count > maxVotes) {
+        maxVotes = count;
+        playersWithMaxVotes = [playerId];
+      } else if (count === maxVotes) {
+        playersWithMaxVotes.push(playerId);
+      }
+    }
+
+    // Determine if there's a tie or someone is eliminated
+    const isTie = playersWithMaxVotes.length > 1 || maxVotes === 0;
+    const eliminatedPlayerId = isTie ? null : playersWithMaxVotes[0];
+    const eliminatedPlayer = eliminatedPlayerId 
+      ? lobby.players.find(p => p.id === eliminatedPlayerId) 
+      : null;
+
+    // Check if the eliminated player was the AI
+    const aiWasEliminated = eliminatedPlayerId === lobby.aiId;
+    const aiPlayer = lobby.players.find(p => p.id === lobby.aiId);
+
+    // Build vote results for all players
+    const voteResults = lobby.players.map(player => ({
+      playerId: player.id,
+      playerName: player.name,
+      votes: voteCounts.get(player.id) || 0,
+      wasEliminated: player.id === eliminatedPlayerId,
+      wasAI: player.id === lobby.aiId
+    }));
+
+    logger.info(`Voting phase ended for lobby ${lobbyCode}`);
+    logger.info(`Eliminated: ${eliminatedPlayer?.name || 'No one (tie)'}, Was AI: ${aiWasEliminated}`);
+
+    // Start results phase
+    this.startResultsPhase(lobbyCode, io, {
+      isTie,
+      eliminatedPlayer: eliminatedPlayer ? {
+        id: eliminatedPlayer.id,
+        name: eliminatedPlayer.name,
+        wasAI: aiWasEliminated
+      } : null,
+      aiPlayer: aiPlayer ? {
+        id: aiPlayer.id,
+        name: aiPlayer.name
+      } : null,
+      voteResults,
+      humansWin: aiWasEliminated
+    });
+  }
+
+  startResultsPhase(lobbyCode: string, io: any, results: {
+    isTie: boolean;
+    eliminatedPlayer: { id: string; name: string; wasAI: boolean } | null;
+    aiPlayer: { id: string; name: string } | null;
+    voteResults: { playerId: string; playerName: string; votes: number; wasEliminated: boolean; wasAI: boolean }[];
+    humansWin: boolean;
+  }): void {
+    this.currentPhases.set(lobbyCode, 'results');
+    this.phaseStartTimes.set(lobbyCode, Date.now());
+
+    io.to(lobbyCode).emit('phase-started', {
+      phase: 'results',
+      duration: 15000, // 15 seconds to show results
+      startsAt: Date.now(),
+      results
+    });
+
+    logger.info(`Results phase started for lobby ${lobbyCode}`);
   }
 
   getCurrentPhase(lobbyCode: string): GamePhase | null {
