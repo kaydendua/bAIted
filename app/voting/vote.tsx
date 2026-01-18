@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useSocket } from './socket';
+import { useSocket } from '../../lib/socket';
 
 interface VoteCount {
   playerId: string;
