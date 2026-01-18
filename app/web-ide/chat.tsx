@@ -6,9 +6,12 @@ import { editorStore } from './editorStore';
 
 interface AIInputProps {
   disabled?: boolean;
+  problem?: string;
 }
 
-export default function AIInput({ disabled }: AIInputProps) {
+const MAX_PROMPT_LENGTH = 50;
+
+export default function AIInput({ disabled, problem }: AIInputProps) {
   const [modification, setModification] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [usageCount, setUsageCount] = useState(0);
@@ -23,13 +26,24 @@ export default function AIInput({ disabled }: AIInputProps) {
       // Get the current code from the editor
       const currentCode = editorStore.getCode();
       
+      // Build prompt with problem context
+      const promptWithContext = `Problem:
+${problem || 'No problem provided'}
+
+Current code:
+\`\`\`
+${currentCode}
+\`\`\`
+
+User request: ${modification}`;
+      
       // Ask AI to modify the code
       const res = await fetch('/api/number', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           getSolution: true, 
-          modification: `Current code:\n\`\`\`\n${currentCode}\n\`\`\`\n\nUser request: ${modification}`,
+          modification: promptWithContext,
         }),
       });
 
@@ -63,10 +77,15 @@ export default function AIInput({ disabled }: AIInputProps) {
 
   return (
     <div className="bg-gray-900/70 border-t border-red-800 p-3 shrink-0">
-      <div className="flex items-center gap-2 mb-2">
-        <Bot className="w-4 h-4 text-red-400" />
-        <span className="text-xs text-red-300">
-          AI Assistance ({remainingUses} uses left)
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <Bot className="w-4 h-4 text-red-400" />
+          <span className="text-xs text-red-300">
+            AI Assistance ({remainingUses} uses left)
+          </span>
+        </div>
+        <span className={`text-xs ${modification.length >= MAX_PROMPT_LENGTH ? 'text-red-400' : 'text-gray-500'}`}>
+          {modification.length}/{MAX_PROMPT_LENGTH}
         </span>
       </div>
       
@@ -79,9 +98,10 @@ export default function AIInput({ disabled }: AIInputProps) {
           <input
             type="text"
             value={modification}
-            onChange={(e) => setModification(e.target.value)}
+            onChange={(e) => setModification(e.target.value.slice(0, MAX_PROMPT_LENGTH))}
             onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
-            placeholder="Ask AI to modify your code..."
+            placeholder="e.g. 'Solve this' or 'Add comments'"
+            maxLength={MAX_PROMPT_LENGTH}
             disabled={isLoading || disabled}
             className="flex-1 px-3 py-2 bg-gray-800 border border-red-800/50 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-50"
           />

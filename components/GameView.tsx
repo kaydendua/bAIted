@@ -405,7 +405,7 @@ export default function GameView() {
                   </div>
                 </CardContent>
                 {/* AI Input at bottom of card (only for impostor) */}
-                {isImpostor && <AIInput disabled={hasSubmitted} />}
+                {isImpostor && <AIInput disabled={hasSubmitted} problem={problem} />}
               </Card>
             </div>
           </div>
