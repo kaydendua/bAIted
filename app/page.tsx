@@ -4,9 +4,7 @@ import LobbyForm from "@/components/LobbyForm";
 import { LobbyProvider, useLobbyContext } from "@/lib/LobbyContext";
 
 export default function Home() {
-  // Only show the header component if the lobby state is not 'in-progress'
   const { lobby } = useLobbyContext();
-
 
   return (
     <div className="w-full">

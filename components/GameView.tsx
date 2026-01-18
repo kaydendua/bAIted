@@ -42,11 +42,22 @@ export default function GameView() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
       });
+      
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      
       const data = await res.json();
-      setProblem(data.response);
+      
+      if (data.error) {
+        console.error('API returned error:', data.error);
+        setProblem(data.response || 'Failed to load problem. Please check server configuration.');
+      } else {
+        setProblem(data.response);
+      }
     } catch (error) {
       console.error('Error fetching problem:', error);
-      setProblem('Failed to load problem. Please refresh.');
+      setProblem('Failed to load problem. Please ensure the API is configured correctly.');
     } finally {
       setProblemLoading(false);
     }
